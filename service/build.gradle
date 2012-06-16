@@ -4,7 +4,7 @@ apply plugin: 'codenarc'
 
 // this should be your service name
 archivesBaseName = 'git'
-version = '0.7-SNAPSHOT'
+version = '0.7'
 // comment this out if you don't want codenarc
 codenarc {
 	configFile = file('config/codenarc/rules.groovy')

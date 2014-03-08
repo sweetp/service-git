@@ -108,7 +108,19 @@ class GitService {
 						],
 						description: description("Find a commit by it's ref, like HEAD, master, etc."),
 						returns: COMMITMSG
-				]]
+				]],
+                ['/scm/status': [
+                        method: 'status',
+                        route: [
+                                method: RouterMethod.CONFIG_EXISTS,
+                                property: 'git'
+                        ],
+                        params: [
+                                config: ServiceParameter.PROJECT_CONFIG
+                        ],
+                        description: description('plain `git status` output'),
+                        returns: 'git status command output as string'
+                ]]
 		])
 		config = json.toString()
 		repositoryBuilder = new EasyFileRepositoryBuilder()
@@ -229,6 +241,35 @@ class GitService {
 		process.waitForProcessOutput(out, err)
 		"$out\n$err"
 	}
+
+    /**
+     * git status
+     *
+     * @param params contain the service config
+     * @return output of 'git status'
+     */
+    String status(Map params) {
+        assert params.config.dir
+        assert params.config.git.dir
+
+        // set executable
+        List command = ['git', 'status']
+        log.debug "command is $command"
+        ProcessBuilder builder = new ProcessBuilder(command)
+
+        // set working dir
+        File gitDir = new File(params.config.dir + '/'
+                + params.config.git.dir as String)
+        builder.directory gitDir.canonicalFile.parentFile
+        log.debug "working dir is ${builder.directory()}"
+
+        // start process and tie it to this thread
+        Process process = builder.start()
+        StringBuffer out = new StringBuffer()
+        StringBuffer err = new StringBuffer()
+        process.waitForProcessOutput(out, err)
+        "$out\n$err"
+    }
 
 	/**
 	 * Find a commit by it's name, like HEAD, master, etc.

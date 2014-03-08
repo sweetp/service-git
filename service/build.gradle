@@ -38,7 +38,7 @@ dependencies {
 	/////////////////////////////////////////
 	// add your libraries here
 	/////////////////////////////////////////
-	compile 'org.eclipse.jgit:org.eclipse.jgit:0.10.1'
+	compile 'org.eclipse.jgit:org.eclipse.jgit:3.0.0.201306101825-r'
 }
 
 // this builds your service as a jar file so you can copy it to the sweetp server

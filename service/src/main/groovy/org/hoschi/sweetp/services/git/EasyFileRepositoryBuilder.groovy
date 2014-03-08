@@ -23,7 +23,7 @@ class EasyFileRepositoryBuilder {
 		String dir = base + File.separator + git
 		File gitDir = new File(dir)
 		if (!gitDir.exists()) {
-			throw new FileNotFoundException("File not found" + dir)
+			throw new FileNotFoundException('File not found' + dir)
 		}
 
 		FileRepositoryBuilder builder = new FileRepositoryBuilder()

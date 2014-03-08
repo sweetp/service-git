@@ -91,6 +91,7 @@ class GitService {
 								config: ServiceParameter.PROJECT_CONFIG,
 								since: ServiceParameter.ONE,
 								until: ServiceParameter.ONE,
+                                limit: ServiceParameter.ONE
 						],
 						description: description("List commits. You can provide optional 'since' and 'until' points in the scm graph to give your search a border. If one of both is set, but not the other one it defaults to 'HEAD'."),
 						returns: [list: COMMITMSG]
@@ -140,7 +141,7 @@ class GitService {
 	String getBranchName(Map params) {
 		assert params.config.git.dir
 
-		log.info "test"
+		log.info 'test'
 
 		Repository repo = repositoryBuilder.buildRepo(params.config.dir,
 				params.config.git.dir)
@@ -274,6 +275,7 @@ class GitService {
 	 * @return the search result
 	 */
 	Object log(Map params) {
+        Integer limit
 		assert params.config.dir
 		assert params.config.git.dir
 
@@ -295,13 +297,24 @@ class GitService {
 			since = getCommitByRef('HEAD', repo)
 			until = getCommitByRef(params.until, repo)
 		}
-		log.debug "since: $since, until: $until"
+
+        if (params.limit) {
+            limit = params.limit.toInteger()
+        } else {
+            limit = 0;
+        }
+
+		log.debug "since: $since, until: $until, limit: $limit"
 
 		Git git = new Git(repo)
 		LogCommand cmd = git.log()
 		if (since && until) {
 			cmd.addRange(since.id, until.id)
 		}
+
+        if (limit) {
+            cmd.setMaxCount(limit);
+        }
 		wrapper.wrap(cmd.call())
 	}
 }

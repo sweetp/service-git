@@ -19,7 +19,9 @@ ruleset {
 	ruleset('rulesets/naming.xml') {
 		exclude 'MethodName'
 	}
-	ruleset('rulesets/size.xml')
+	ruleset('rulesets/size.xml') {
+        'MethodSize' maxLines: 200
+    }
 	ruleset('rulesets/unnecessary.xml') {
 		'UnnecessaryObjectReferences' priority: 3
 	}

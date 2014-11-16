@@ -4,6 +4,7 @@ import groovy.json.JsonBuilder
 import groovy.util.logging.Log4j
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.LogCommand
+import org.eclipse.jgit.api.errors.RefAlreadyExistsException
 import org.eclipse.jgit.lib.Repository
 import org.eclipse.jgit.revwalk.RevCommit
 import org.eclipse.jgit.revwalk.RevWalk
@@ -11,6 +12,8 @@ import org.hoschi.sweetp.services.base.ServiceParameter
 import org.hoschi.sweetp.services.base.RouterMethod
 import org.hoschi.sweetp.services.base.IHookManager
 import org.hoschi.sweetp.services.base.IRouter
+import org.eclipse.jgit.api.CreateBranchCommand
+import org.eclipse.jgit.api.CheckoutCommand
 
 /**
  * Service for the version control system git.
@@ -50,6 +53,38 @@ class GitService {
 						description: description('Branch name of HEAD.'),
 						returns: 'branch name as string'
 				]],
+                ['/scm/branch/create': [
+                        method: 'branchCreate',
+                        route: [
+                                method: RouterMethod.CONFIG_EXISTS,
+                                property: 'git'
+                        ],
+                        params: [
+                                config: ServiceParameter.PROJECT_CONFIG,
+                                name: ServiceParameter.ONE,
+                                force: ServiceParameter.ONE,
+                                startPoint: ServiceParameter.ONE,
+								noErrorOnExisting: ServiceParameter.ONE
+                        ],
+                        description: description('Create branch. This uses HEAD or `startPoint` as ancestor branch. When `force` is set, an already existing branch gets deleted and a new one gets created. When `force` is false and the branch exists already, this leads to an error. This can be prevented when you set `noErrorOnExisting` to "true".'),
+                        returns: '"success" as string'
+                ]],
+                ['/scm/checkout': [
+                        method: 'checkout',
+                        route: [
+                                method: RouterMethod.CONFIG_EXISTS,
+                                property: 'git'
+                        ],
+                        params: [
+                                config: ServiceParameter.PROJECT_CONFIG,
+                                name: ServiceParameter.ONE,
+                                createBranch: ServiceParameter.ONE,
+                                force: ServiceParameter.ONE,
+                                startPoint: ServiceParameter.ONE,
+                        ],
+                        description: description('Checkout ref by name. You can also create a not existing branch with this.'),
+                        returns: '"success" as string'
+                ]],
 				['/scm/commit': [
 						method: 'commit',
 						route: [
@@ -358,4 +393,63 @@ class GitService {
         }
 		wrapper.wrap(cmd.call())
 	}
+
+    protected addBranchCreateProperties(cmd, params) {
+        assert cmd
+        if (params.force == 'true') {
+            cmd.setForce(true)
+        } else if (params.force == 'false') {
+			cmd.setForce(false)
+		}
+
+        if (params.startPoint) {
+            cmd.setStartPoint(params.startPoint as String)
+        }
+
+        cmd
+    }
+
+    String branchCreate(Map params) {
+        assert params.config.dir
+        assert params.config.git.dir
+        assert params.name, "You can't create a branch without a name!"
+
+        Repository repo = repositoryBuilder.buildRepo(params.config.dir,
+                params.config.git.dir)
+
+        Git git = new Git(repo)
+        CreateBranchCommand cmd = git.branchCreate().setName(params.name)
+        addBranchCreateProperties(cmd, params)
+
+		try {
+			cmd.call()
+		} catch (RefAlreadyExistsException ex) {
+			if (!params.noErrorOnExisting || params.noErrorOnExisting == 'false') {
+				// we should treat this as error, so rethrow the exception
+				throw ex;
+			}
+		}
+
+        'success'
+    }
+
+    String checkout(Map params) {
+        assert params.config.dir
+        assert params.config.git.dir
+        assert params.name, 'You need a name to check something out!'
+
+        Repository repo = repositoryBuilder.buildRepo(params.config.dir,
+                params.config.git.dir)
+
+        Git git = new Git(repo)
+        CheckoutCommand cmd = git.checkout().setName(params.name)
+        if (params.createBranch == 'true') {
+            cmd.setCreateBranch(true)
+        }
+        addBranchCreateProperties(cmd, params)
+
+        cmd.call()
+
+        'success'
+    }
 }
